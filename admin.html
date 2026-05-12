@@ -1,0 +1,1317 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>Partner Admin</title>
+  <link rel="preconnect" href="https://fonts.googleapis.com" />
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin />
+  <link href="https://fonts.googleapis.com/css2?family=DM+Sans:wght@400;500;600;700&display=swap" rel="stylesheet" />
+  <style>
+    /* ============================================================
+       ADMIN CONFIGURATION — Edit these two values before deploying
+       See README.md for instructions on generating PASSWORD_HASH
+       and creating a GitHub Personal Access Token.
+       ============================================================
+
+       PASSWORD_HASH : SHA-256 hash of your chosen admin password.
+                       Use the Setup Helper screen (shown on first
+                       load) to generate this. Never put the plain
+                       text password here.
+
+       GITHUB_OWNER  : Your GitHub username (lowercase).
+       GITHUB_REPO   : The repository name (default: partner-directory).
+    ============================================================ */
+
+    :root {
+      --accent:       #1A237E;
+      --accent-light: #E8EAF6;
+      --accent-text:  #FFFFFF;
+      --bg:           #ECEDF6;
+      --card-bg:      #FFFFFF;
+      --text-primary: #1A237E;
+      --text-body:    #3D3D5C;
+      --text-muted:   #7B7B9D;
+      --danger:       #C62828;
+      --danger-light: #FFEBEE;
+      --success:      #1B5E20;
+      --success-light:#E8F5E9;
+      --warning:      #E65100;
+      --warning-light:#FFF3E0;
+      --border:       #D8D9EC;
+      --radius:       10px;
+      --shadow:       0 2px 16px rgba(26,35,126,0.10);
+      --font:         'DM Sans', sans-serif;
+    }
+
+    *, *::before, *::after { box-sizing: border-box; margin: 0; padding: 0; }
+
+    body {
+      font-family: var(--font);
+      background: var(--bg);
+      color: var(--text-body);
+      min-height: 100vh;
+      padding: 0;
+    }
+
+    /* ── Screens ────────────────────────────────────────────── */
+    .screen { display: none; padding: 32px 20px 48px; max-width: 680px; margin: 0 auto; }
+    .screen.visible { display: block; }
+
+    /* ── Cards ──────────────────────────────────────────────── */
+    .card {
+      background: var(--card-bg);
+      border-radius: 14px;
+      box-shadow: var(--shadow);
+      padding: 32px;
+      margin-bottom: 20px;
+    }
+
+    .card-title {
+      font-size: 20px;
+      font-weight: 700;
+      color: var(--text-primary);
+      margin-bottom: 6px;
+    }
+
+    .card-subtitle {
+      font-size: 14px;
+      color: var(--text-muted);
+      margin-bottom: 24px;
+      line-height: 1.5;
+    }
+
+    /* ── Page header ────────────────────────────────────────── */
+    .admin-header {
+      background: var(--accent);
+      color: var(--accent-text);
+      padding: 16px 24px;
+      display: flex;
+      align-items: center;
+      justify-content: space-between;
+      gap: 12px;
+      margin-bottom: 0;
+    }
+
+    .admin-header h1 { font-size: 17px; font-weight: 700; }
+
+    .header-actions { display: flex; gap: 8px; align-items: center; }
+
+    /* ── Form elements ──────────────────────────────────────── */
+    .field { margin-bottom: 18px; }
+
+    label {
+      display: block;
+      font-size: 13px;
+      font-weight: 600;
+      color: var(--text-primary);
+      margin-bottom: 6px;
+    }
+
+    label .req { color: var(--danger); margin-left: 2px; }
+
+    input[type="text"],
+    input[type="url"],
+    input[type="password"],
+    textarea {
+      width: 100%;
+      padding: 11px 14px;
+      border: 2px solid var(--border);
+      border-radius: var(--radius);
+      font-family: var(--font);
+      font-size: 14px;
+      color: var(--text-primary);
+      background: #FAFAFE;
+      transition: border-color 0.2s;
+      outline: none;
+    }
+
+    input[type="text"]:focus,
+    input[type="url"]:focus,
+    input[type="password"]:focus,
+    textarea:focus {
+      border-color: var(--accent);
+      background: #FFFFFF;
+    }
+
+    textarea { resize: vertical; min-height: 88px; line-height: 1.5; }
+
+    .field-hint {
+      font-size: 12px;
+      color: var(--text-muted);
+      margin-top: 5px;
+      line-height: 1.4;
+    }
+
+    /* ── File upload ────────────────────────────────────────── */
+    .upload-area {
+      border: 2px dashed var(--border);
+      border-radius: var(--radius);
+      padding: 20px;
+      text-align: center;
+      cursor: pointer;
+      transition: border-color 0.2s, background 0.2s;
+      background: #FAFAFE;
+      position: relative;
+    }
+
+    .upload-area:hover { border-color: var(--accent); background: var(--accent-light); }
+    .upload-area.has-file { border-color: var(--accent); border-style: solid; }
+
+    .upload-area input[type="file"] {
+      position: absolute; inset: 0; opacity: 0; cursor: pointer; width: 100%; height: 100%;
+    }
+
+    .upload-icon { font-size: 28px; margin-bottom: 6px; }
+    .upload-label { font-size: 13px; font-weight: 600; color: var(--text-primary); }
+    .upload-hint  { font-size: 12px; color: var(--text-muted); margin-top: 3px; }
+
+    .logo-preview-wrap {
+      margin-top: 12px;
+      display: none;
+      align-items: center;
+      gap: 12px;
+    }
+
+    .logo-preview-wrap.visible { display: flex; }
+
+    .logo-preview {
+      width: 64px;
+      height: 64px;
+      object-fit: contain;
+      border-radius: 8px;
+      border: 1px solid var(--border);
+      padding: 4px;
+      background: #fff;
+    }
+
+    .logo-preview-name {
+      font-size: 13px;
+      color: var(--text-body);
+    }
+
+    .logo-clear-btn {
+      font-size: 12px;
+      color: var(--danger);
+      background: none;
+      border: none;
+      cursor: pointer;
+      padding: 2px 0;
+      font-family: var(--font);
+      text-decoration: underline;
+    }
+
+    /* ── Buttons ────────────────────────────────────────────── */
+    .btn {
+      display: inline-flex;
+      align-items: center;
+      gap: 6px;
+      padding: 10px 20px;
+      border-radius: 8px;
+      font-family: var(--font);
+      font-size: 14px;
+      font-weight: 600;
+      border: none;
+      cursor: pointer;
+      transition: opacity 0.15s, transform 0.1s;
+      text-decoration: none;
+      white-space: nowrap;
+    }
+
+    .btn:active { transform: scale(0.97); }
+    .btn:disabled { opacity: 0.5; cursor: not-allowed; transform: none; }
+
+    .btn-primary { background: var(--accent); color: var(--accent-text); }
+    .btn-primary:hover:not(:disabled) { opacity: 0.88; }
+
+    .btn-secondary {
+      background: var(--accent-light);
+      color: var(--accent);
+    }
+    .btn-secondary:hover:not(:disabled) { background: #D0D4EE; }
+
+    .btn-danger { background: var(--danger); color: #fff; }
+    .btn-danger:hover:not(:disabled) { opacity: 0.88; }
+
+    .btn-ghost {
+      background: rgba(255,255,255,0.15);
+      color: #fff;
+      padding: 7px 14px;
+      font-size: 13px;
+    }
+    .btn-ghost:hover { background: rgba(255,255,255,0.25); }
+
+    .btn-sm { padding: 6px 12px; font-size: 13px; }
+
+    .btn-row {
+      display: flex;
+      gap: 10px;
+      flex-wrap: wrap;
+      margin-top: 8px;
+    }
+
+    /* ── Alert / status ─────────────────────────────────────── */
+    .alert {
+      border-radius: var(--radius);
+      padding: 12px 16px;
+      font-size: 14px;
+      line-height: 1.5;
+      margin-bottom: 16px;
+      display: none;
+    }
+
+    .alert.visible { display: block; }
+    .alert-success { background: var(--success-light); color: var(--success); }
+    .alert-error   { background: var(--danger-light);  color: var(--danger);  }
+    .alert-warning { background: var(--warning-light); color: var(--warning); }
+    .alert-info    { background: var(--accent-light);  color: var(--accent);  }
+
+    /* ── Partner list items ─────────────────────────────────── */
+    .partner-list { display: flex; flex-direction: column; gap: 10px; }
+
+    .partner-item {
+      display: flex;
+      align-items: center;
+      gap: 12px;
+      background: var(--card-bg);
+      border-radius: var(--radius);
+      padding: 14px 16px;
+      box-shadow: 0 1px 6px rgba(26,35,126,0.07);
+    }
+
+    .partner-thumb {
+      width: 44px;
+      height: 44px;
+      border-radius: 8px;
+      background: var(--accent-light);
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      overflow: hidden;
+      flex-shrink: 0;
+    }
+
+    .partner-thumb img {
+      width: 100%;
+      height: 100%;
+      object-fit: contain;
+      padding: 4px;
+    }
+
+    .partner-thumb-letter {
+      font-size: 18px;
+      font-weight: 700;
+      color: var(--accent);
+    }
+
+    .partner-item-info { flex: 1; min-width: 0; }
+
+    .partner-item-name {
+      font-size: 15px;
+      font-weight: 600;
+      color: var(--text-primary);
+      white-space: nowrap;
+      overflow: hidden;
+      text-overflow: ellipsis;
+    }
+
+    .partner-item-meta {
+      font-size: 12px;
+      color: var(--text-muted);
+      white-space: nowrap;
+      overflow: hidden;
+      text-overflow: ellipsis;
+    }
+
+    .partner-item-actions { display: flex; gap: 8px; flex-shrink: 0; }
+
+    /* ── Overlay / modal ────────────────────────────────────── */
+    .overlay {
+      display: none;
+      position: fixed;
+      inset: 0;
+      background: rgba(0,0,0,0.45);
+      z-index: 100;
+      overflow-y: auto;
+      padding: 32px 16px;
+    }
+
+    .overlay.visible { display: flex; align-items: flex-start; justify-content: center; }
+
+    .modal {
+      background: var(--card-bg);
+      border-radius: 16px;
+      padding: 32px;
+      width: 100%;
+      max-width: 560px;
+      box-shadow: 0 8px 40px rgba(0,0,0,0.18);
+      position: relative;
+    }
+
+    .modal-title {
+      font-size: 19px;
+      font-weight: 700;
+      color: var(--text-primary);
+      margin-bottom: 22px;
+    }
+
+    .modal-close {
+      position: absolute;
+      top: 18px; right: 18px;
+      background: var(--accent-light);
+      border: none;
+      border-radius: 50%;
+      width: 30px; height: 30px;
+      font-size: 16px;
+      cursor: pointer;
+      color: var(--accent);
+      display: flex; align-items: center; justify-content: center;
+      font-weight: 700;
+    }
+
+    /* ── Hash generator ─────────────────────────────────────── */
+    .hash-output {
+      font-family: monospace;
+      font-size: 13px;
+      background: #F0F1FA;
+      border: 1px solid var(--border);
+      border-radius: 8px;
+      padding: 12px;
+      word-break: break-all;
+      color: var(--text-primary);
+      margin-top: 8px;
+      min-height: 44px;
+    }
+
+    .steps { counter-reset: step; list-style: none; margin: 0 0 20px; padding: 0; }
+    .steps li {
+      counter-increment: step;
+      display: flex;
+      gap: 12px;
+      align-items: flex-start;
+      margin-bottom: 14px;
+      font-size: 14px;
+      line-height: 1.5;
+    }
+
+    .steps li::before {
+      content: counter(step);
+      min-width: 26px; height: 26px;
+      background: var(--accent);
+      color: #fff;
+      border-radius: 50%;
+      display: flex; align-items: center; justify-content: center;
+      font-size: 12px; font-weight: 700;
+      flex-shrink: 0;
+    }
+
+    code {
+      font-family: monospace;
+      background: #F0F1FA;
+      border-radius: 4px;
+      padding: 1px 5px;
+      font-size: 12px;
+    }
+
+    .divider {
+      border: none;
+      border-top: 1px solid var(--border);
+      margin: 24px 0;
+    }
+
+    /* ── Spinner ────────────────────────────────────────────── */
+    .spinner-inline {
+      display: inline-block;
+      width: 14px; height: 14px;
+      border: 2px solid rgba(255,255,255,0.4);
+      border-top-color: #fff;
+      border-radius: 50%;
+      animation: spin 0.6s linear infinite;
+      vertical-align: middle;
+    }
+
+    @keyframes spin { to { transform: rotate(360deg); } }
+
+    .empty-list {
+      text-align: center;
+      padding: 32px;
+      color: var(--text-muted);
+      font-size: 14px;
+    }
+
+    /* ── Delete confirm ─────────────────────────────────────── */
+    .delete-confirm-name {
+      font-weight: 700;
+      color: var(--danger);
+    }
+  </style>
+</head>
+<body>
+
+<!-- ============================================================
+     SCREEN: SETUP HELPER
+     Shown only when PASSWORD_HASH has not been configured yet.
+     ============================================================ -->
+<div id="screen-setup" class="screen">
+  <div class="card">
+    <div class="card-title">&#9881; Admin Setup Helper</div>
+    <div class="card-subtitle">
+      Complete these steps once before deploying your admin panel.
+    </div>
+
+    <ol class="steps">
+      <li>
+        Type your chosen admin password below and click <strong>Generate Hash</strong>.
+        Copy the hash that appears.
+      </li>
+      <li>
+        Open <code>admin.html</code> in a text editor (or click the pencil icon on GitHub).
+        Find the <code>PASSWORD_HASH</code> line near the top of the
+        <code>&lt;script&gt;</code> section and replace <code>REPLACE_WITH_HASH</code>
+        with the hash you copied.
+      </li>
+      <li>
+        While you have the file open, also set <code>GITHUB_OWNER</code> to your
+        GitHub username and confirm <code>GITHUB_REPO</code> matches your repo name.
+      </li>
+      <li>
+        Save and commit <code>admin.html</code>. Then refresh this page —
+        the login screen will appear.
+      </li>
+    </ol>
+
+    <div class="field">
+      <label for="hashInputPw">Choose a password</label>
+      <input type="password" id="hashInputPw" placeholder="Type the password you want to use..." autocomplete="new-password" />
+    </div>
+
+    <button class="btn btn-primary" onclick="generateHash()">Generate Hash</button>
+
+    <div id="hashResult" class="hash-output" style="display:none"></div>
+    <div id="hashCopyMsg" class="alert alert-success" style="margin-top:10px"></div>
+  </div>
+</div>
+
+<!-- ============================================================
+     SCREEN: LOGIN
+     ============================================================ -->
+<div id="screen-login" class="screen">
+  <div style="text-align:center; padding: 12px 0 28px;">
+    <div style="font-size:36px; margin-bottom:8px;">&#128274;</div>
+    <div style="font-size:22px; font-weight:700; color:var(--text-primary);">Partner Admin</div>
+    <div style="font-size:14px; color:var(--text-muted); margin-top:4px;">Enter your admin password to continue</div>
+  </div>
+
+  <div class="card">
+    <div id="loginAlert" class="alert"></div>
+
+    <div class="field">
+      <label for="loginPassword">Password</label>
+      <input type="password" id="loginPassword" placeholder="Admin password..."
+             autocomplete="current-password"
+             onkeydown="if(event.key==='Enter') handleLogin()" />
+    </div>
+
+    <button class="btn btn-primary" onclick="handleLogin()" style="width:100%">
+      Sign In
+    </button>
+  </div>
+</div>
+
+<!-- ============================================================
+     SCREEN: GITHUB TOKEN SETUP
+     ============================================================ -->
+<div id="screen-token" class="screen">
+  <div class="card">
+    <div class="card-title">&#128273; Connect to GitHub</div>
+    <div class="card-subtitle">
+      This is a one-time setup on this browser. Your token is saved locally and
+      never stored in the code or repository.
+    </div>
+
+    <ol class="steps">
+      <li>
+        Go to
+        <a href="https://github.com/settings/personal-access-tokens/new" target="_blank" rel="noopener noreferrer">
+          github.com/settings/personal-access-tokens/new
+        </a>
+        (opens in a new tab).
+      </li>
+      <li>
+        Give it a name like <em>Partner Directory Admin</em>.
+        Set <strong>Expiration</strong> to your preference (1 year is reasonable).
+      </li>
+      <li>
+        Under <strong>Repository access</strong>, choose <strong>Only select repositories</strong>
+        and pick your <code>partner-directory</code> repo.
+      </li>
+      <li>
+        Under <strong>Repository permissions</strong>, find <strong>Contents</strong>
+        and set it to <strong>Read and write</strong>. Leave everything else as
+        <em>No access</em>.
+      </li>
+      <li>
+        Click <strong>Generate token</strong>, copy it, and paste it below.
+      </li>
+    </ol>
+
+    <div id="tokenAlert" class="alert"></div>
+
+    <div class="field">
+      <label for="tokenInput">Personal Access Token</label>
+      <input type="password" id="tokenInput"
+             placeholder="github_pat_..."
+             autocomplete="off"
+             onkeydown="if(event.key==='Enter') handleTokenSave()" />
+      <div class="field-hint">
+        Paste the token exactly as GitHub shows it. You will not be able to see it again on GitHub after leaving that page.
+      </div>
+    </div>
+
+    <div class="btn-row">
+      <button class="btn btn-primary" onclick="handleTokenSave()">Save &amp; Connect</button>
+      <button class="btn btn-secondary" onclick="handleLogout()">Back to Login</button>
+    </div>
+  </div>
+</div>
+
+<!-- ============================================================
+     SCREEN: MAIN ADMIN
+     ============================================================ -->
+<div id="screen-main" class="screen" style="padding-top:0; max-width:100%;">
+
+  <div class="admin-header">
+    <h1>&#128101; Partner Admin</h1>
+    <div class="header-actions">
+      <button class="btn btn-ghost btn-sm" onclick="handleRefresh()">&#8635; Refresh</button>
+      <button class="btn btn-ghost btn-sm" onclick="handleLogout()">Sign Out</button>
+    </div>
+  </div>
+
+  <div style="padding: 24px 20px 48px; max-width: 720px; margin: 0 auto;">
+
+    <div id="mainAlert" class="alert"></div>
+
+    <!-- Add button + count -->
+    <div style="display:flex; align-items:center; justify-content:space-between; flex-wrap:wrap; gap:12px; margin-bottom:18px;">
+      <div id="partnerCount" style="font-size:14px; color:var(--text-muted);">Loading...</div>
+      <button class="btn btn-primary" onclick="openAddForm()">+ Add Partner</button>
+    </div>
+
+    <!-- Partner list -->
+    <div id="partnerList" class="partner-list">
+      <div class="empty-list">Loading partners...</div>
+    </div>
+
+  </div>
+</div>
+
+<!-- ============================================================
+     OVERLAY: ADD / EDIT FORM
+     ============================================================ -->
+<div id="formOverlay" class="overlay" onclick="handleOverlayClick(event)">
+  <div class="modal" id="formModal">
+    <button class="modal-close" onclick="closeFormOverlay()" title="Cancel">&times;</button>
+    <div class="modal-title" id="formTitle">Add Partner</div>
+
+    <div id="formAlert" class="alert"></div>
+
+    <div class="field">
+      <label for="fName">Organization Name <span class="req">*</span></label>
+      <input type="text" id="fName" placeholder="e.g. North Alabama EMS" />
+    </div>
+
+    <div class="field">
+      <label for="fDescription">Description</label>
+      <textarea id="fDescription" placeholder="A brief description of what this organization does..."></textarea>
+    </div>
+
+    <div class="field">
+      <label for="fContact">Contact Info</label>
+      <input type="text" id="fContact" placeholder="email@example.com or (256) 555-0100" />
+    </div>
+
+    <div class="field">
+      <label for="fWebsite">Website URL</label>
+      <input type="url" id="fWebsite" placeholder="https://www.example.com" />
+    </div>
+
+    <div style="display:grid; grid-template-columns:1fr 1fr; gap:12px;">
+      <div class="field">
+        <label for="fCity">City</label>
+        <input type="text" id="fCity" placeholder="Huntsville" />
+      </div>
+      <div class="field">
+        <label for="fCounty">County</label>
+        <input type="text" id="fCounty" placeholder="Madison" />
+      </div>
+    </div>
+
+    <div class="field">
+      <label>Logo Image</label>
+      <div class="upload-area" id="uploadArea">
+        <input type="file" id="logoFile" accept="image/png,image/jpeg,image/gif,image/webp,image/svg+xml"
+               onchange="handleLogoSelect(event)" />
+        <div class="upload-icon">&#128444;</div>
+        <div class="upload-label">Click to choose an image</div>
+        <div class="upload-hint">PNG, JPG, SVG — max 5 MB</div>
+      </div>
+      <div class="logo-preview-wrap" id="logoPreviewWrap">
+        <img class="logo-preview" id="logoPreviewImg" src="" alt="Logo preview" />
+        <div>
+          <div class="logo-preview-name" id="logoPreviewName"></div>
+          <button class="logo-clear-btn" onclick="clearLogo()">Remove</button>
+        </div>
+      </div>
+    </div>
+
+    <hr class="divider" />
+
+    <div class="btn-row">
+      <button class="btn btn-primary" id="saveBtn" onclick="handleSave()">
+        Save Partner
+      </button>
+      <button class="btn btn-secondary" onclick="closeFormOverlay()">Cancel</button>
+    </div>
+  </div>
+</div>
+
+<!-- ============================================================
+     OVERLAY: DELETE CONFIRM
+     ============================================================ -->
+<div id="deleteOverlay" class="overlay" onclick="handleDeleteOverlayClick(event)">
+  <div class="modal" style="max-width:420px;">
+    <div class="modal-title" style="color:var(--danger);">&#128465; Delete Partner</div>
+    <p style="font-size:15px; margin-bottom:20px; line-height:1.6;">
+      Are you sure you want to delete
+      <span class="delete-confirm-name" id="deleteConfirmName"></span>?
+      This cannot be undone.
+    </p>
+    <div class="btn-row">
+      <button class="btn btn-danger" id="confirmDeleteBtn" onclick="confirmDelete()">Yes, Delete</button>
+      <button class="btn btn-secondary" onclick="closeDeleteOverlay()">Cancel</button>
+    </div>
+  </div>
+</div>
+
+
+<script>
+  // ============================================================
+  // CONFIGURATION — Edit these three values
+  // ============================================================
+  const CONFIG = {
+    PASSWORD_HASH: 'REPLACE_WITH_HASH',   // SHA-256 hash — use the Setup Helper above
+    GITHUB_OWNER:  'YOUR_GITHUB_USERNAME', // Your GitHub username (lowercase)
+    GITHUB_REPO:   'partner-directory'    // Your repository name
+  };
+  // ============================================================
+
+  const TOKEN_KEY    = 'pd_admin_token';   // localStorage key for GitHub token
+  const SESSION_KEY  = 'pd_admin_session'; // sessionStorage key for login state
+
+  let ghToken      = null;
+  let partners     = [];
+  let partnersFileSha = null;
+  let editingIndex = null;     // null = new, number = editing existing
+  let pendingDeleteIndex = null;
+  let selectedLogoFile = null; // File object selected by user
+  let currentLogoPath  = null; // Existing logo path (when editing)
+
+  // ============================================================
+  // Boot
+  // ============================================================
+  window.addEventListener('load', () => {
+    const needsSetup = (CONFIG.PASSWORD_HASH === 'REPLACE_WITH_HASH');
+
+    if (needsSetup) {
+      showScreen('setup');
+      return;
+    }
+
+    // Restore session
+    const hasSession = sessionStorage.getItem(SESSION_KEY) === '1';
+    ghToken = localStorage.getItem(TOKEN_KEY);
+
+    if (!hasSession) {
+      showScreen('login');
+      return;
+    }
+
+    if (!ghToken) {
+      showScreen('token');
+      return;
+    }
+
+    showScreen('main');
+    loadPartners();
+  });
+
+  // ============================================================
+  // Screen management
+  // ============================================================
+  function showScreen(name) {
+    document.querySelectorAll('.screen').forEach(s => s.classList.remove('visible'));
+    const el = document.getElementById('screen-' + name);
+    if (el) el.classList.add('visible');
+  }
+
+  // ============================================================
+  // Setup helper — password hash generator
+  // ============================================================
+  async function generateHash() {
+    const pw = document.getElementById('hashInputPw').value;
+    if (!pw) {
+      showHashResult('Please enter a password first.', false);
+      return;
+    }
+
+    const hash = await sha256(pw);
+    const el = document.getElementById('hashResult');
+    el.style.display = 'block';
+    el.textContent = hash;
+
+    // Copy to clipboard
+    try {
+      await navigator.clipboard.writeText(hash);
+      showAlert('hashCopyMsg', 'Hash copied to clipboard!', 'success');
+    } catch (_) {
+      showAlert('hashCopyMsg', 'Copy the hash above and paste it into the PASSWORD_HASH field in admin.html.', 'info');
+    }
+  }
+
+  function showHashResult(msg, isHash) {
+    const el = document.getElementById('hashResult');
+    el.style.display = 'block';
+    el.textContent = msg;
+  }
+
+  // ============================================================
+  // Auth — login
+  // ============================================================
+  async function handleLogin() {
+    const pw = document.getElementById('loginPassword').value;
+    if (!pw) {
+      showAlert('loginAlert', 'Please enter your password.', 'error');
+      return;
+    }
+
+    const hash = await sha256(pw);
+    if (hash !== CONFIG.PASSWORD_HASH) {
+      showAlert('loginAlert', 'Incorrect password. Please try again.', 'error');
+      document.getElementById('loginPassword').value = '';
+      return;
+    }
+
+    sessionStorage.setItem(SESSION_KEY, '1');
+    document.getElementById('loginPassword').value = '';
+    clearAlert('loginAlert');
+
+    ghToken = localStorage.getItem(TOKEN_KEY);
+    if (!ghToken) {
+      showScreen('token');
+    } else {
+      showScreen('main');
+      loadPartners();
+    }
+  }
+
+  // ============================================================
+  // Auth — GitHub token
+  // ============================================================
+  async function handleTokenSave() {
+    const token = (document.getElementById('tokenInput').value || '').trim();
+    if (!token) {
+      showAlert('tokenAlert', 'Please paste your GitHub Personal Access Token.', 'error');
+      return;
+    }
+
+    if (!token.startsWith('github_pat_') && !token.startsWith('ghp_')) {
+      showAlert('tokenAlert', 'That does not look like a GitHub token. Make sure you copied the full token starting with github_pat_ or ghp_.', 'warning');
+      return;
+    }
+
+    showAlert('tokenAlert', 'Testing connection to GitHub...', 'info');
+
+    // Verify the token can actually read the repo
+    const ok = await testGitHubConnection(token);
+    if (!ok) {
+      showAlert('tokenAlert', 'Could not connect to the repository. Check that the token has Contents: Read and Write access on the correct repository, then try again.', 'error');
+      return;
+    }
+
+    localStorage.setItem(TOKEN_KEY, token);
+    ghToken = token;
+    document.getElementById('tokenInput').value = '';
+    clearAlert('tokenAlert');
+    showScreen('main');
+    loadPartners();
+  }
+
+  // ============================================================
+  // Auth — logout / clear token
+  // ============================================================
+  function handleLogout() {
+    sessionStorage.removeItem(SESSION_KEY);
+    ghToken = null;
+    showScreen('login');
+  }
+
+  // ============================================================
+  // GitHub API helpers
+  // ============================================================
+  async function ghFetch(path, options = {}) {
+    const url = `https://api.github.com/repos/${CONFIG.GITHUB_OWNER}/${CONFIG.GITHUB_REPO}/contents/${path}`;
+    const resp = await fetch(url, {
+      ...options,
+      headers: {
+        'Authorization': `Bearer ${ghToken}`,
+        'Accept': 'application/vnd.github+json',
+        'X-GitHub-Api-Version': '2022-11-28',
+        ...(options.headers || {})
+      }
+    });
+
+    if (resp.status === 401) {
+      // Token is invalid or expired
+      localStorage.removeItem(TOKEN_KEY);
+      ghToken = null;
+      sessionStorage.removeItem(SESSION_KEY);
+      showScreen('token');
+      throw new Error('GitHub token is invalid or expired. Please re-enter it.');
+    }
+
+    return resp;
+  }
+
+  async function testGitHubConnection(token) {
+    try {
+      const url = `https://api.github.com/repos/${CONFIG.GITHUB_OWNER}/${CONFIG.GITHUB_REPO}`;
+      const resp = await fetch(url, {
+        headers: {
+          'Authorization': `Bearer ${token}`,
+          'Accept': 'application/vnd.github+json'
+        }
+      });
+      return resp.ok;
+    } catch (_) {
+      return false;
+    }
+  }
+
+  async function getFile(path) {
+    const resp = await ghFetch(path);
+    if (resp.status === 404) return null;
+    if (!resp.ok) throw new Error(`GitHub error ${resp.status} fetching ${path}`);
+    return await resp.json();
+  }
+
+  async function putFile(path, base64Content, sha, commitMessage) {
+    const body = { message: commitMessage, content: base64Content };
+    if (sha) body.sha = sha;
+
+    const resp = await ghFetch(path, {
+      method: 'PUT',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify(body)
+    });
+
+    if (!resp.ok) {
+      const err = await resp.json().catch(() => ({}));
+      throw new Error(err.message || `GitHub error ${resp.status} writing ${path}`);
+    }
+
+    return await resp.json();
+  }
+
+  // Encode a UTF-8 string to base64 safely (handles non-ASCII characters)
+  function encodeBase64(str) {
+    return btoa(
+      encodeURIComponent(str).replace(/%([0-9A-F]{2})/g, (_, p1) =>
+        String.fromCharCode(parseInt(p1, 16))
+      )
+    );
+  }
+
+  // Decode base64 from GitHub API to UTF-8 string
+  function decodeBase64(str) {
+    return decodeURIComponent(
+      atob(str.replace(/\s/g, '')).split('').map(c =>
+        '%' + ('00' + c.charCodeAt(0).toString(16)).slice(-2)
+      ).join('')
+    );
+  }
+
+  // ============================================================
+  // Load partners from GitHub
+  // ============================================================
+  async function loadPartners() {
+    setPartnerList('<div class="empty-list">Loading...</div>');
+    document.getElementById('partnerCount').textContent = 'Loading...';
+
+    try {
+      const file = await getFile('partners.json');
+      if (!file) {
+        partners = [];
+        partnersFileSha = null;
+      } else {
+        partnersFileSha = file.sha;
+        const text = decodeBase64(file.content);
+        partners = JSON.parse(text);
+        if (!Array.isArray(partners)) partners = [];
+      }
+
+      renderPartnerList();
+    } catch (err) {
+      showAlert('mainAlert', 'Error loading partners: ' + err.message, 'error');
+      setPartnerList('<div class="empty-list">Could not load partners.</div>');
+    }
+  }
+
+  async function handleRefresh() { await loadPartners(); }
+
+  // ============================================================
+  // Render partner list
+  // ============================================================
+  function renderPartnerList() {
+    const count = partners.length;
+    document.getElementById('partnerCount').textContent =
+      count === 0 ? 'No partners yet.' : `${count} partner${count === 1 ? '' : 's'}`;
+
+    if (count === 0) {
+      setPartnerList('<div class="empty-list">No partners yet. Click "+ Add Partner" to get started.</div>');
+      return;
+    }
+
+    const sorted = partners
+      .map((p, i) => ({ ...p, _origIndex: i }))
+      .sort((a, b) => (a.name || '').localeCompare(b.name || ''));
+
+    const html = sorted.map(p => {
+      const letter = (p.name || '?').charAt(0).toUpperCase();
+      const thumb  = p.logo
+        ? `<img src="${escHtml(p.logo)}" alt="" onerror="this.style.display='none';this.nextSibling.style.display='flex'" /><span class="partner-thumb-letter" style="display:none">${escHtml(letter)}</span>`
+        : `<span class="partner-thumb-letter">${escHtml(letter)}</span>`;
+
+      const meta = [p.city, p.county].filter(Boolean).join(', ') || p.contactInfo || '';
+
+      return `
+        <div class="partner-item">
+          <div class="partner-thumb">${thumb}</div>
+          <div class="partner-item-info">
+            <div class="partner-item-name">${escHtml(p.name || '(unnamed)')}</div>
+            ${meta ? `<div class="partner-item-meta">${escHtml(meta)}</div>` : ''}
+          </div>
+          <div class="partner-item-actions">
+            <button class="btn btn-secondary btn-sm" onclick="openEditForm(${p._origIndex})">Edit</button>
+            <button class="btn btn-danger btn-sm" onclick="openDeleteConfirm(${p._origIndex})">Delete</button>
+          </div>
+        </div>
+      `;
+    }).join('');
+
+    setPartnerList(html);
+  }
+
+  function setPartnerList(html) {
+    document.getElementById('partnerList').innerHTML = html;
+  }
+
+  // ============================================================
+  // Add / Edit form
+  // ============================================================
+  function openAddForm() {
+    editingIndex     = null;
+    selectedLogoFile = null;
+    currentLogoPath  = null;
+
+    document.getElementById('formTitle').textContent = 'Add New Partner';
+    clearFormFields();
+    clearAlert('formAlert');
+    resetLogoUI();
+    showOverlay('formOverlay');
+  }
+
+  function openEditForm(index) {
+    editingIndex     = index;
+    selectedLogoFile = null;
+    const p = partners[index];
+
+    document.getElementById('formTitle').textContent  = 'Edit Partner';
+    document.getElementById('fName').value            = p.name        || '';
+    document.getElementById('fDescription').value     = p.description || '';
+    document.getElementById('fContact').value         = p.contactInfo || '';
+    document.getElementById('fWebsite').value         = p.website     || '';
+    document.getElementById('fCity').value            = p.city        || '';
+    document.getElementById('fCounty').value          = p.county      || '';
+
+    currentLogoPath = p.logo || null;
+    if (currentLogoPath) {
+      document.getElementById('logoPreviewImg').src = currentLogoPath;
+      document.getElementById('logoPreviewName').textContent = 'Current logo';
+      document.getElementById('logoPreviewWrap').classList.add('visible');
+      document.getElementById('uploadArea').classList.add('has-file');
+    } else {
+      resetLogoUI();
+    }
+
+    clearAlert('formAlert');
+    showOverlay('formOverlay');
+  }
+
+  function clearFormFields() {
+    ['fName','fDescription','fContact','fWebsite','fCity','fCounty']
+      .forEach(id => { document.getElementById(id).value = ''; });
+  }
+
+  function closeFormOverlay() {
+    closeOverlay('formOverlay');
+    editingIndex     = null;
+    selectedLogoFile = null;
+    currentLogoPath  = null;
+  }
+
+  // ============================================================
+  // Logo handling
+  // ============================================================
+  function handleLogoSelect(event) {
+    const file = event.target.files[0];
+    if (!file) return;
+
+    const MAX_SIZE = 5 * 1024 * 1024;
+    if (file.size > MAX_SIZE) {
+      showAlert('formAlert', 'Image is too large. Please use a file under 5 MB.', 'error');
+      event.target.value = '';
+      return;
+    }
+
+    selectedLogoFile = file;
+    currentLogoPath  = null;
+
+    const reader = new FileReader();
+    reader.onload = (e) => {
+      document.getElementById('logoPreviewImg').src = e.target.result;
+      document.getElementById('logoPreviewName').textContent = file.name;
+      document.getElementById('logoPreviewWrap').classList.add('visible');
+      document.getElementById('uploadArea').classList.add('has-file');
+    };
+    reader.readAsDataURL(file);
+  }
+
+  function clearLogo() {
+    selectedLogoFile = null;
+    currentLogoPath  = null;
+    document.getElementById('logoFile').value = '';
+    resetLogoUI();
+  }
+
+  function resetLogoUI() {
+    document.getElementById('logoPreviewWrap').classList.remove('visible');
+    document.getElementById('uploadArea').classList.remove('has-file');
+    document.getElementById('logoPreviewImg').src = '';
+    document.getElementById('logoFile').value = '';
+  }
+
+  // ============================================================
+  // Save partner
+  // ============================================================
+  async function handleSave() {
+    const name = (document.getElementById('fName').value || '').trim();
+    if (!name) {
+      showAlert('formAlert', 'Organization name is required.', 'error');
+      return;
+    }
+
+    const saveBtn = document.getElementById('saveBtn');
+    saveBtn.disabled = true;
+    saveBtn.innerHTML = '<span class="spinner-inline"></span> Saving...';
+    clearAlert('formAlert');
+
+    try {
+      // Upload logo if a new one was selected
+      let logoPath = currentLogoPath || '';
+
+      if (selectedLogoFile) {
+        showAlert('formAlert', 'Uploading logo image...', 'info');
+        logoPath = await uploadLogoFile(selectedLogoFile, name);
+      }
+
+      const partnerData = {
+        name,
+        description: (document.getElementById('fDescription').value || '').trim(),
+        contactInfo: (document.getElementById('fContact').value     || '').trim(),
+        website:     (document.getElementById('fWebsite').value     || '').trim(),
+        city:        (document.getElementById('fCity').value        || '').trim(),
+        county:      (document.getElementById('fCounty').value      || '').trim(),
+        logo:        logoPath
+      };
+
+      // Update partners array
+      if (editingIndex !== null) {
+        partners[editingIndex] = partnerData;
+      } else {
+        partners.push(partnerData);
+      }
+
+      // Save partners.json to GitHub
+      showAlert('formAlert', 'Saving to GitHub...', 'info');
+      await savePartnersFile(editingIndex !== null
+        ? `Update partner: ${name}`
+        : `Add partner: ${name}`
+      );
+
+      closeFormOverlay();
+      showAlert('mainAlert', `Partner "${name}" saved successfully.`, 'success');
+      renderPartnerList();
+
+    } catch (err) {
+      showAlert('formAlert', 'Save failed: ' + err.message, 'error');
+    }
+
+    saveBtn.disabled = false;
+    saveBtn.innerHTML = 'Save Partner';
+  }
+
+  async function uploadLogoFile(file, partnerName) {
+    const ext      = file.name.split('.').pop().toLowerCase();
+    const safeName = partnerName.toLowerCase().replace(/[^a-z0-9]/g, '-').replace(/-+/g, '-') + '.' + ext;
+    const path     = `images/${safeName}`;
+
+    // Read file as base64
+    const base64 = await new Promise((resolve, reject) => {
+      const reader = new FileReader();
+      reader.onload  = (e) => resolve(e.target.result.split(',')[1]);
+      reader.onerror = () => reject(new Error('Could not read the image file.'));
+      reader.readAsDataURL(file);
+    });
+
+    // Check if a file at this path already exists (need its SHA to overwrite)
+    let existingSha = null;
+    try {
+      const existing = await getFile(path);
+      if (existing) existingSha = existing.sha;
+    } catch (_) { /* new file */ }
+
+    await putFile(path, base64, existingSha, `Upload logo: ${safeName}`);
+    return path;
+  }
+
+  async function savePartnersFile(commitMessage) {
+    const json    = JSON.stringify(partners, null, 2);
+    const base64  = encodeBase64(json);
+
+    // Get latest SHA (in case someone else committed since we loaded)
+    try {
+      const current = await getFile('partners.json');
+      if (current) partnersFileSha = current.sha;
+    } catch (_) { /* file may not exist yet */ }
+
+    await putFile('partners.json', base64, partnersFileSha, commitMessage);
+
+    // Refresh SHA for next save
+    try {
+      const updated = await getFile('partners.json');
+      if (updated) partnersFileSha = updated.sha;
+    } catch (_) {}
+  }
+
+  // ============================================================
+  // Delete
+  // ============================================================
+  function openDeleteConfirm(index) {
+    pendingDeleteIndex = index;
+    const name = (partners[index] || {}).name || 'this partner';
+    document.getElementById('deleteConfirmName').textContent = name;
+    showOverlay('deleteOverlay');
+  }
+
+  async function confirmDelete() {
+    if (pendingDeleteIndex === null) return;
+
+    const btn  = document.getElementById('confirmDeleteBtn');
+    const name = (partners[pendingDeleteIndex] || {}).name || 'partner';
+    btn.disabled = true;
+    btn.innerHTML = '<span class="spinner-inline"></span> Deleting...';
+
+    try {
+      partners.splice(pendingDeleteIndex, 1);
+      await savePartnersFile(`Remove partner: ${name}`);
+      closeDeleteOverlay();
+      showAlert('mainAlert', `"${name}" deleted.`, 'success');
+      renderPartnerList();
+    } catch (err) {
+      closeDeleteOverlay();
+      showAlert('mainAlert', 'Delete failed: ' + err.message, 'error');
+    }
+
+    btn.disabled = false;
+    btn.innerHTML = 'Yes, Delete';
+    pendingDeleteIndex = null;
+  }
+
+  function closeDeleteOverlay() {
+    closeOverlay('deleteOverlay');
+    pendingDeleteIndex = null;
+  }
+
+  // ============================================================
+  // Overlay helpers
+  // ============================================================
+  function showOverlay(id) {
+    document.getElementById(id).classList.add('visible');
+    document.body.style.overflow = 'hidden';
+  }
+
+  function closeOverlay(id) {
+    document.getElementById(id).classList.remove('visible');
+    document.body.style.overflow = '';
+  }
+
+  function handleOverlayClick(e) {
+    if (e.target === document.getElementById('formOverlay')) closeFormOverlay();
+  }
+
+  function handleDeleteOverlayClick(e) {
+    if (e.target === document.getElementById('deleteOverlay')) closeDeleteOverlay();
+  }
+
+  // ============================================================
+  // Alert helpers
+  // ============================================================
+  function showAlert(id, msg, type) {
+    const el = document.getElementById(id);
+    if (!el) return;
+    el.textContent = msg;
+    el.className = `alert alert-${type} visible`;
+  }
+
+  function clearAlert(id) {
+    const el = document.getElementById(id);
+    if (!el) return;
+    el.className = 'alert';
+    el.textContent = '';
+  }
+
+  // ============================================================
+  // Security helpers
+  // ============================================================
+
+  // SHA-256 using the browser's built-in Web Crypto API
+  async function sha256(str) {
+    const buf  = await crypto.subtle.digest('SHA-256', new TextEncoder().encode(str));
+    return Array.from(new Uint8Array(buf))
+      .map(b => b.toString(16).padStart(2, '0'))
+      .join('');
+  }
+
+  // Escape HTML to prevent XSS when inserting user data into innerHTML
+  function escHtml(str) {
+    return String(str)
+      .replace(/&/g, '&amp;')
+      .replace(/</g, '&lt;')
+      .replace(/>/g, '&gt;')
+      .replace(/"/g, '&quot;')
+      .replace(/'/g, '&#039;');
+  }
+</script>
+</body>
+</html>

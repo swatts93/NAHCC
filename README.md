@@ -75,6 +75,65 @@ Before going live, update the URL in `index.html`:
 
 ---
 
+---
+
+## Setting Up the Admin Panel
+
+The admin panel (`admin.html`) lets authorized users add, edit, and delete partners through a simple form — no code editing required.
+
+### Step 1 — Generate Your Admin Password Hash
+
+1. Upload `admin.html` to your repo first (see Step 2 of the main setup above).
+2. Go to: `https://YOUR-USERNAME.github.io/partner-directory/admin.html`
+3. The **Setup Helper** screen appears automatically on first load.
+4. Type the password you want to use, click **Generate Hash**, and copy the result.
+
+### Step 2 — Configure admin.html
+
+1. Open `admin.html` in GitHub (click the file name, then the pencil icon).
+2. Find this block near the top of the `<script>` section:
+   ```
+   const CONFIG = {
+     PASSWORD_HASH: 'REPLACE_WITH_HASH',
+     GITHUB_OWNER:  'YOUR_GITHUB_USERNAME',
+     GITHUB_REPO:   'partner-directory'
+   };
+   ```
+3. Replace `REPLACE_WITH_HASH` with the hash you copied in Step 1.
+4. Replace `YOUR_GITHUB_USERNAME` with your actual GitHub username (lowercase).
+5. Click **Commit changes**. Refresh the admin page — the login screen should now appear.
+
+### Step 3 — Create a GitHub Personal Access Token (once per browser)
+
+Each admin user must do this once on their own computer:
+
+1. Go to: `https://github.com/settings/personal-access-tokens/new`
+2. Name it something like `Partner Directory Admin`
+3. Set **Expiration** to 1 year
+4. Under **Repository access** choose **Only select repositories** and pick `partner-directory`
+5. Under **Repository permissions**, set **Contents** to **Read and write** — leave everything else as No access
+6. Click **Generate token** and copy it immediately (GitHub only shows it once)
+
+### Step 4 — First Login
+
+1. Go to `https://YOUR-USERNAME.github.io/partner-directory/admin.html`
+2. Enter your admin password
+3. Paste your GitHub Personal Access Token when prompted — it is saved in your browser and you will not need to enter it again on this device
+
+### Step 5 — Embed in Wix (Members Only Page)
+
+1. In Wix Harmony, create a new page called **Partner Admin**
+2. In the page settings, set permissions to **Members Only** or **Admin**
+3. Do **not** add this page to your site navigation menu — keep the URL private
+4. Add an **HTML Embed** element and set the URL to:
+   `https://YOUR-USERNAME.github.io/partner-directory/admin.html`
+5. Set width to 100% and height to at least **900px**
+6. Save and publish
+
+> **Security note:** The admin page lives at a public URL. It is protected by a password plus a GitHub token — an attacker would need both to make any changes, and the token only has write access to this one repository. All changes are tracked in git history and can be reversed.
+
+---
+
 ## For Collaborators — Adding and Editing Partners
 
 You do not need to know how to code. All you need is a GitHub account with access to this repository.
